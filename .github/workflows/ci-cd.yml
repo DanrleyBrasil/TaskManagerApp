@@ -1,25 +1,19 @@
 name: CI/CD Pipeline
 
-# Gatilhos: roda no push para main e em qualquer Pull Request
 on:
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
-# Permissões necessárias para o GITHUB_TOKEN escrever no Packages (GHCR)
 permissions:
   contents: read
   packages: write
 
 jobs:
-  # ==========================================================
-  # JOB 1: BUILD & TEST (Java + Maven)
-  # ==========================================================
   build-and-test:
     runs-on: ubuntu-latest
 
-    # Cria um container de banco de dados para os testes de integração
     services:
       postgres:
         image: postgres:16-alpine
@@ -29,7 +23,6 @@ jobs:
           POSTGRES_DB: taskmanager_db
         ports:
           - 5432:5432
-        # Healthcheck para garantir que o banco subiu antes de rodar os testes
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -47,23 +40,23 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Rodar Testes (Unitários e Integração)
-        run: mvn clean verify
+      # Verifica se o arquivo application.properties existe e printa (debug)
+      - name: Verificar application.properties
+        run: ls -la src/main/resources/
+
+      - name: Rodar Build e Testes com Maven
+        # O -B (Batch mode) evita logs excessivos de download
+        # O -Dfile.encoding=UTF-8 garante que a JVM do runner use UTF-8
+        run: mvn -B clean verify -Dfile.encoding=UTF-8
         env:
-          # Define as variáveis para conectar no banco do Service acima
-          # O Spring Boot lerá isso se você usar ${SPRING_DATASOURCE_URL} no properties
-          # Ou, como padrão, o Spring tenta conectar em localhost:5432
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/taskmanager_db
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres123
 
-  # ==========================================================
-  # JOB 2: DOCKER BUILD & PUSH (Apenas na Main)
-  # ==========================================================
   docker-push:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Só roda se for push na main
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout do código
@@ -76,7 +69,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extrair metadados (tags, labels)
+      - name: Extrair metadados
         id: meta
         uses: docker/metadata-action@v5
         with:
