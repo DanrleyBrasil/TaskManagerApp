@@ -87,7 +87,7 @@ class TaskServiceTest {
         // ASSERT
 
         assertNotNull(result);
-        assertEquals("Comprar Chocolate", result.getTitle());
+        assertEquals("Comprar Café", result.getTitle());
         assertEquals("1kg de café torrado", result.getDescription());
         assertEquals(TaskStatus.PENDING, result.getStatus());
 
