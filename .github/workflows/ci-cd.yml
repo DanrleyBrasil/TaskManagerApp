@@ -3,9 +3,9 @@ name: CI/CD Pipeline
 # Gatilhos: roda no push para main e em qualquer Pull Request
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 # Permissões necessárias para o GITHUB_TOKEN escrever no Packages (GHCR)
 permissions:
