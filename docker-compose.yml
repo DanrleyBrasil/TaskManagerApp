@@ -1,0 +1,109 @@
+# Versão do Docker Compose (3.8 é estável e moderna)
+version: '3.8'
+
+# ============================================
+# SERVIÇOS (CONTAINERS)
+# ============================================
+services:
+
+  # ==========================================
+  # SERVIÇO: PostgreSQL (Banco de Dados)
+  # ==========================================
+  postgres:
+    # Imagem oficial do PostgreSQL versão 16
+    # Alpine é uma versão mais leve (menor tamanho)
+    image: postgres:16-alpine
+
+    # Nome do container (facilita identificar no Docker)
+    container_name: taskmanager-postgres
+
+    # Reinicia automaticamente se o container cair
+    # "unless-stopped" = sempre reinicia, exceto se você parar manualmente
+    restart: unless-stopped
+
+    # ==========================================
+    # VARIÁVEIS DE AMBIENTE (Configurações)
+    # ==========================================
+    environment:
+      # Usuário do banco (deve bater com application.properties)
+      POSTGRES_USER: postgres
+
+      # Senha do banco (deve bater com application.properties)
+      POSTGRES_PASSWORD: postgres123
+
+      # Nome do banco que será criado automaticamente
+      # O PostgreSQL cria esse banco na primeira vez que sobe
+      POSTGRES_DB: taskmanager_db
+
+      # Charset (encoding de caracteres) - suporta acentos, emojis, etc
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+
+    # ==========================================
+    # MAPEAMENTO DE PORTAS
+    # ==========================================
+    # Formato: PORTA_HOST:PORTA_CONTAINER
+    # 5432 é a porta padrão do PostgreSQL
+    # Isso permite você acessar o banco em localhost:5432
+    ports:
+      - "5432:5432"
+
+    # ==========================================
+    # VOLUMES (Persistência de Dados)
+    # ==========================================
+    # Sem volumes, ao deletar o container você PERDE TODOS OS DADOS!
+    # Com volumes, os dados ficam salvos no seu computador
+    volumes:
+      # postgres_data é um volume nomeado (definido lá embaixo)
+      # /var/lib/postgresql/data é onde o PostgreSQL guarda os dados dentro do container
+      - postgres_data:/var/lib/postgresql/data
+
+    # ==========================================
+    # REDE (Network)
+    # ==========================================
+    # Conecta esse container à rede "taskmanager-network"
+    # Isso permite que outros containers se comuniquem com o PostgreSQL
+    networks:
+      - taskmanager-network
+
+    # ==========================================
+    # HEALTHCHECK (Verificação de Saúde)
+    # ==========================================
+    # Docker verifica se o PostgreSQL está realmente funcionando
+    # Não basta o container estar rodando, o banco precisa aceitar conexões!
+    healthcheck:
+      # Comando que testa se o banco está pronto
+      # pg_isready é uma ferramenta do PostgreSQL que verifica isso
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+
+      # Intervalo entre cada verificação (30 segundos)
+      interval: 30s
+
+      # Timeout da verificação (10 segundos)
+      timeout: 10s
+
+      # Quantas tentativas antes de considerar "unhealthy" (3 vezes)
+      retries: 3
+
+      # Tempo inicial antes de começar a verificar (40 segundos)
+      # PostgreSQL precisa de tempo para inicializar
+      start_period: 40s
+
+# ============================================
+# VOLUMES (Armazenamento Persistente)
+# ============================================
+# Define volumes nomeados que podem ser reutilizados
+volumes:
+  # Volume para os dados do PostgreSQL
+  # Os dados ficam salvos em: /var/lib/docker/volumes/postgres_data
+  postgres_data:
+    driver: local
+
+# ============================================
+# NETWORKS (Redes)
+# ============================================
+# Cria uma rede virtual para os containers se comunicarem
+networks:
+  taskmanager-network:
+    # Bridge é o tipo de rede padrão
+    # Permite comunicação entre containers
+    driver: bridge
