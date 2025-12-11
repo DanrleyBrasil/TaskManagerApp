@@ -1,5 +1,6 @@
 name: CI/CD Pipeline
 
+# GATILHOS: Agora apontando para 'master'
 on:
   push:
     branches: [ "master" ]
@@ -40,13 +41,8 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # Verifica se o arquivo application.properties existe e printa (debug)
-      - name: Verificar application.properties
-        run: ls -la src/main/resources/
-
+      # Garante que o Maven use UTF-8 no comando
       - name: Rodar Build e Testes com Maven
-        # O -B (Batch mode) evita logs excessivos de download
-        # O -Dfile.encoding=UTF-8 garante que a JVM do runner use UTF-8
         run: mvn -B clean verify -Dfile.encoding=UTF-8
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/taskmanager_db
@@ -56,7 +52,8 @@ jobs:
   docker-push:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # CONDICIONAL: Só roda se for push na branch 'master'
+    if: github.ref == 'refs/heads/master'
 
     steps:
       - name: Checkout do código
